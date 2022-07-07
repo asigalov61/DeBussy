@@ -224,6 +224,8 @@ for chords_list in tqdm(melody_chords_f):
 tavg = sum(times) / len(times)
 davg = sum(durs) / len(durs)
 pavg = sum(pitches) / len(pitches)
+print('Done!')
+print('=' * 70)
 
 print('Single notes count', nocs.count(126))
 print('Chords notes count', nocs.count(127))
@@ -236,7 +238,7 @@ print('=' * 70)
 """# (PROCESS)"""
 
 #@title Process and prep INTs...
-randomize_dataset = False #@param {type:"boolean"}
+randomize_dataset = True #@param {type:"boolean"}
 
 print('=' * 70)
 print('Prepping INTs dataset...')
@@ -271,9 +273,9 @@ TMIDIX.Tegridy_Any_Pickle_File_Writer(train_data1, '/content/DeBussy_INTS')
 
 #@title Test the resulting INTs dataset...
 
-print(train_data1[:15])
+print('Sample INTs:', train_data1[:15])
 
-out = train_data1[:16000]
+out = train_data1[:1600]
 
 if len(out) != 0:
     
@@ -318,6 +320,21 @@ if len(out) != 0:
                                                         number_of_ticks_per_quarter=500)
 
     print('Done!')
+
+print('Displaying resulting composition...')
+fname = '/content/DeBussy-Music-Composition'
+
+pm = pretty_midi.PrettyMIDI(fname + '.mid')
+
+# Retrieve piano roll of the MIDI file
+piano_roll = pm.get_piano_roll()
+
+plt.figure(figsize=(14, 5))
+librosa.display.specshow(piano_roll, x_axis='time', y_axis='cqt_note', fmin=1, hop_length=160, sr=16000, cmap=plt.cm.hot)
+plt.title(fname)
+
+FluidSynth("/usr/share/sounds/sf2/FluidR3_GM.sf2", 16000).midi_to_audio(str(fname + '.mid'), str(fname + '.wav'))
+Audio(str(fname + '.wav'), rate=16000)
 
 """# (TRAIN)"""
 
@@ -515,14 +532,14 @@ summary(model)
 
 #@markdown NOTE: Play with the settings to get different results
 
+#@markdown NOTE: By default priming is random from the dataset
 
-priming_type = "Random Point" #@param ["Random Intro", "Random Point"]
+priming_type = "Random Point"
 freeze_priming_point = False #@param {type:"boolean"}
-number_of_instruments = 1 # DO NOT REDUCE for optimal performance !!!
-number_of_prime_tokens = 32 #@param {type:"slider", min:4, max:32, step:4}
-number_of_tokens_to_generate = 128 #@param {type:"slider", min:64, max:128, step:16}
+number_of_prime_tokens = 64 #@param {type:"slider", min:4, max:128, step:4}
+number_of_tokens_to_generate = 64 #@param {type:"slider", min:64, max:128, step:16}
 number_of_continuation_blocks = 40 #@param {type:"slider", min:10, max:100, step:5}
-temperature = 0.6 #@param {type:"slider", min:0.1, max:1, step:0.1}
+temperature = 0.8 #@param {type:"slider", min:0.1, max:1, step:0.1}
 show_stats = False #@param {type:"boolean"}
 
 #===================================================================
@@ -532,8 +549,7 @@ print('=' * 70)
 
 print('Generation settings:')
 print('=' * 70)
-print('Priming type:', priming_type)
-print('Number of instruments:', number_of_instruments)
+print('Priming type:', 'Random Point')
 print('Number of prime tokens:', number_of_prime_tokens)
 print('Number of tokens:', number_of_tokens_to_generate)
 print('Number of continuation blocks:', number_of_continuation_blocks)
@@ -542,18 +558,16 @@ print('Model temperature:', temperature)
 print('=' * 70)
 print('Prepping...')
 
+out = []
+
 if not freeze_priming_point:
   r = random.randint(0, len(train_data1))
 
-if priming_type == 'Random Intro':
-  idx = r+train_data1[r:].index(0)
-  out = train_data1[idx:idx+number_of_prime_tokens]
-else:
-  out = train_data1[r:r+number_of_prime_tokens]
+out = train_data1[r:r+(number_of_prime_tokens*2)]
 
 out1 = []
 
-tokens_range = (386 * number_of_instruments)
+tokens_range = 128
 
 print('=' * 70)
 print('Generating...')
@@ -565,7 +579,7 @@ for i in range(number_of_continuation_blocks):
     print('Block #', i)
 
   rand_seq = model.generate(torch.Tensor(out[-number_of_prime_tokens:]), 
-                                          target_seq_length=number_of_tokens_to_generate,
+                                          target_seq_length=number_of_tokens_to_generate+number_of_prime_tokens,
                                           temperature=temperature,
                                           stop_token=tokens_range,
                                           verbose=show_stats)
@@ -632,5 +646,20 @@ else:
 
 
 print('=' * 70)
+
+print('Displaying resulting composition...')
+fname = '/content/DeBussy-Music-Composition'
+
+pm = pretty_midi.PrettyMIDI(fname + '.mid')
+
+# Retrieve piano roll of the MIDI file
+piano_roll = pm.get_piano_roll()
+
+plt.figure(figsize=(14, 5))
+librosa.display.specshow(piano_roll, x_axis='time', y_axis='cqt_note', fmin=1, hop_length=160, sr=16000, cmap=plt.cm.hot)
+plt.title(fname)
+
+FluidSynth("/usr/share/sounds/sf2/FluidR3_GM.sf2", 16000).midi_to_audio(str(fname + '.mid'), str(fname + '.wav'))
+Audio(str(fname + '.wav'), rate=16000)
 
 """# Congrats! You did it! :)"""
