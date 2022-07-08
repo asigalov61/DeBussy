@@ -106,6 +106,11 @@ gfiles = []
 
 melody_chords_f = []
 
+nocs = []
+times = []
+durs = []
+pitches = []
+
 wk = [0, 2, 4, 5, 7, 9, 11] # White Notes
 bk = [1, 3, 6, 8, 10] # Black Notes
 
@@ -163,58 +168,72 @@ for f in tqdm(filez[:int(len(filez) * dataset_ratio)]):
             # recalculating timings
         
             for e in events_matrix1:
-                e[1] = int(e[1] / 5)
-                e[2] = int(e[2] / 10)
+                # e[1] = int(e[1] / 2) # Time-shift
+                e[2] = int(e[2] / 2) # Duration
 
             events_matrix1.sort(key=lambda x: x[4], reverse=True) # Sort by pitch H -> L
             events_matrix1.sort(key=lambda x: x[1]) # Then sort by start-times
             
-            noc = 124 # Note or Chord (noc)
+            noc = 254 # Note or Chord (noc)
+            color = 0 # Note color (ptc+0 or ptc+128)
+
+            melody_chords = []
 
             pe = events_matrix1[0]
-            melody_chords = []
-            cho = []
+            
             for i in range(len(events_matrix1)-1):
 
-                time = max(0, min(123, events_matrix1[i][1]-pe[1])) # Time-shift
-                dur = max(0, min(123, events_matrix1[i][2])) # Duration
-                ptc = max(0, min(123, events_matrix1[i][4])) # Pitch
+                time = max(0, min(253, events_matrix1[i][1]-pe[1])) # Time-shift
+                dur = max(0, min(253, events_matrix1[i][2])) # Duration
+                ptc = max(0, min(127, events_matrix1[i][4])) # Pitch
 
                 if events_matrix1[i][1] > pe[1] and events_matrix1[i+1][1] != events_matrix1[i][1]:
-                  # noc = 124-125 # Single Note
-                  # 124 - White Note
-                  # 125 - Black Note
+                  # noc = 254 # Single Note
+                  # ptc+0 - White Note
+                  # ptc+128 - Black Note
+
+                  noc = 254
 
                   nr = [ptc % 12]
-
                   if nr in wk:
-                    noc = 124     
+                    color = 0     
                   else:
-                    noc = 125
+                    color = 128
 
                 if events_matrix1[i][1] >= pe[1] and events_matrix1[i+1][1] == events_matrix1[i][1]:
-                  # noc = 126-127 # Chord
-                  # 126 - White Chord Note
-                  # 127 - Black Chord Note
+                  # noc = 255 # Chord
+                  # ptc+0 - White Chord Note
+                  # ptc+128 - Black Chord Note
+
+                  noc = 255
 
                   cr = [ptc % 12]
                   if cr in wk:
-                    noc = 126
+                    color = 0     
                   else:
-                    noc = 127
+                    color = 128
                 
                 if events_matrix1[i][1] == pe[1] and events_matrix1[i+1][1] != events_matrix1[i][1]:
-                  # noc = 126-127 # Chord
-                  # 126 - White Chord Note
-                  # 127 - Black Chord Note
+                  # noc = 255 # Chord
+                  # ptc+0 - White Chord Note
+                  # ptc+128 - Black Chord Note
+
+                  noc = 255
 
                   cr = [ptc % 12]
                   if cr in wk:
-                    noc = 126
+                    color = 0     
                   else:
-                    noc = 127
+                    color = 128
 
-                melody_chords.append([noc, time, dur, ptc])
+                melody_chords.append([noc, time, dur, ptc+color])
+
+                # Stats
+
+                nocs.append(noc)
+                times.append(time)
+                durs.append(dur)
+                pitches.append(ptc)
 
                 pe = events_matrix1[i]
 
@@ -242,26 +261,14 @@ print('=' * 70)
 # Dataset stats...
 print('Generating dataset stats...')
 
-nocs = []
-times = []
-durs = []
-pitches = []
-
-for chords_list in tqdm(melody_chords_f):
-    for c in chords_list:
-      nocs.append(c[0])
-      times.append(c[1])
-      durs.append(c[2])
-      pitches.append(c[3])
-
 tavg = sum(times) / len(times)
 davg = sum(durs) / len(durs)
 pavg = sum(pitches) / len(pitches)
 print('Done!')
 print('=' * 70)
 
-print('Single notes count', nocs.count(124)+nocs.count(125))
-print('Chords notes count', nocs.count(126)+nocs.count(127))
+print('Single notes count', nocs.count(254))
+print('Chords notes count', nocs.count(255))
 print('Average time-shift', tavg)
 print('Average duration', davg)
 print('Average pitch', pavg)
@@ -319,23 +326,26 @@ if len(out) != 0:
     vel = 0
     pitch = 0
     channel = 0
-    son = [126]
+    son = [254]
     for s in song[1:]:
 
-        if s < 126:
+        if s < 254:
           son.append(s)
 
         else:
-            time += son[0] * 5
+            time += son[0]
 
-            dur = ((son[1]) * 10) + 10
+            dur = ((son[1]) * 2) + 2
             
             channel = 0 # Piano
 
-            pitch = son[2]
+            if son[2] // 128 != 0:
+              pitch = son[2]-128
+            else:
+              pitch = son[2]
             
             # Velocities for notes and chords:
-            if s == 126:
+            if s == 254:
               vel = son[2] # Note velocity == note pitch value
 
             else:
@@ -419,7 +429,7 @@ print('=' * 50)
 
 #@title Train the model
 
-DIC_SIZE = 128
+DIC_SIZE = 256
 
 # DO NOT FORGET TO ADJUST MODEL PARAMS IN GPT2RGAX module to your specs
 
@@ -530,7 +540,7 @@ print('Done!')
 full_path_to_model_checkpoint = "/content/DeBussy-Trained-Model.pth" #@param {type:"string"}
 
 print('Loading the model...')
-config = GPTConfig(128, 
+config = GPTConfig(256, 
                    max_seq,
                    dim_feedforward=512,
                    n_layer=8, 
@@ -586,28 +596,65 @@ if len(events_matrix1) > 0:
     # recalculating timings
 
     for e in events_matrix1:
-        e[1] = int(e[1] / 5)
-        e[2] = int(e[2] / 10)
+        # e[1] = int(e[1] / 5)
+        e[2] = int(e[2] / 2)
 
     events_matrix1.sort(key=lambda x: x[4], reverse=True) # Sort by pitch H -> L
     events_matrix1.sort(key=lambda x: x[1]) # Then sort by start-times
     
     noc = 126 # Note or Chord
+    color = 0
 
-    pe = events_matrix1[0]
     melody_chords = []
+    
+    pe = events_matrix1[0]
+
     for i in range(len(events_matrix1)-1):
 
-        time = max(0, min(125, events_matrix1[i][1]-pe[1])) # Time-shift
-        dur = max(0, min(125, events_matrix1[i][2])) # Duration
-        ptc = max(0, min(125, events_matrix1[i][4])) # Pitch
+        time = max(0, min(253, events_matrix1[i][1]-pe[1])) # Time-shift
+        dur = max(0, min(253, events_matrix1[i][2])) # Duration
+        ptc = max(0, min(127, events_matrix1[i][4])) # Pitch
 
-        if events_matrix1[i][1] > pe[1] and events_matrix1[i+1][1] == events_matrix1[i][1]:
-          noc = 127 # Chord
         if events_matrix1[i][1] > pe[1] and events_matrix1[i+1][1] != events_matrix1[i][1]:
-          noc = 126 # Single Note
+          # noc = 254 # Single Note
+          # ptc+0 - White Note
+          # ptc+128 - Black Note
 
-        melody_chords.append([noc, time, dur, ptc])
+          noc = 254
+
+          nr = [ptc % 12]
+          if nr in wk:
+            color = 0     
+          else:
+            color = 128
+
+        if events_matrix1[i][1] >= pe[1] and events_matrix1[i+1][1] == events_matrix1[i][1]:
+          # noc = 255 # Chord
+          # ptc+0 - White Chord Note
+          # ptc+128 - Black Chord Note
+
+          noc = 255
+
+          cr = [ptc % 12]
+          if cr in wk:
+            color = 0     
+          else:
+            color = 128
+        
+        if events_matrix1[i][1] == pe[1] and events_matrix1[i+1][1] != events_matrix1[i][1]:
+          # noc = 255 # Chord
+          # ptc+0 - White Chord Note
+          # ptc+128 - Black Chord Note
+
+          noc = 255
+
+          cr = [ptc % 12]
+          if cr in wk:
+            color = 0     
+          else:
+            color = 128
+
+        melody_chords.append([noc, time, dur, ptc+color])
 
         pe = events_matrix1[i]
 
@@ -699,24 +746,26 @@ if len(out1) != 0:
     vel = 0
     pitch = 0
     channel = 0
-    son = [126]
+    son = [254]
     for s in song[1:]:
 
-        if s < 126:
+        if s < 254:
           son.append(s)
 
         else:
-          if len(son) == 3:
-            time += son[0] * 5
+            time += son[0]
 
-            dur = ((son[1]) * 10) + 10
+            dur = ((son[1]) * 2) + 2
             
             channel = 0 # Piano
 
-            pitch = son[2]
+            if son[2] // 128 != 0:
+              pitch = son[2]-128
+            else:
+              pitch = son[2]
             
             # Velocities for notes and chords:
-            if s == 126:
+            if s == 254:
               vel = son[2] # Note velocity == note pitch value
 
             else:
@@ -724,7 +773,7 @@ if len(out1) != 0:
                                
             song_f.append(['note', time, dur, channel, pitch, vel ])
             
-          son = []
+            son = []
 
     detailed_stats = TMIDIX.Tegridy_SONG_to_MIDI_Converter(song_f,
                                                         output_signature = 'DeBussy',  
