@@ -378,6 +378,7 @@ print('Min INT in the dataset', min(train_data1))
 print('=' * 50)
 
 print('Length of the dataset:',len(train_dataset))
+print('Number of dataset samples:', (len(train_dataset) // SEQ_LEN))
 print('Length of data loader',len(train_loader))
 print('=' * 50)
 print('Done! Enjoy! :)')
