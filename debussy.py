@@ -602,7 +602,7 @@ if len(events_matrix1) > 0:
     events_matrix1.sort(key=lambda x: x[4], reverse=True) # Sort by pitch H -> L
     events_matrix1.sort(key=lambda x: x[1]) # Then sort by start-times
     
-    noc = 126 # Note or Chord
+    noc = 254 # Note or Chord
     color = 0
 
     melody_chords = []
@@ -709,7 +709,7 @@ if priming_type == 'Custom MIDI':
   out = inputs
   out1.extend(out[:number_of_prime_tokens])
 
-tokens_range = 128
+tokens_range = 256
 
 print('=' * 70)
 print('Generating...')
@@ -753,6 +753,8 @@ if len(out1) != 0:
           son.append(s)
 
         else:
+          if len(son) == 3:
+
             time += son[0]
 
             dur = ((son[1]) * 2) + 2
@@ -773,7 +775,7 @@ if len(out1) != 0:
                                
             song_f.append(['note', time, dur, channel, pitch, vel ])
             
-            son = []
+          son = []
 
     detailed_stats = TMIDIX.Tegridy_SONG_to_MIDI_Converter(song_f,
                                                         output_signature = 'DeBussy',  
