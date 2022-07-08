@@ -149,7 +149,7 @@ for f in tqdm(filez[:int(len(filez) * dataset_ratio)]):
 
         while itrack < len(score):
             for event in score[itrack]:         
-                if event[0] == 'note':
+                if event[0] == 'note' and event[3] != 9:
                     events_matrix1.append(event)
             itrack += 1
     
@@ -528,17 +528,72 @@ summary(model)
 
 """# (GENERATE)"""
 
+#@title Custom MIDI option
+full_path_to_custom_MIDI = "/content/tegridy-tools/tegridy-tools/seed2.mid" #@param {type:"string"}
+
+print('Loading custom MIDI file...')
+
+score = TMIDIX.midi2ms_score(open(full_path_to_custom_MIDI, 'rb').read())
+
+events_matrix1 = []
+
+itrack = 1
+
+while itrack < len(score):
+    for event in score[itrack]:         
+        if event[0] == 'note' and event[3] != 9:
+            events_matrix1.append(event)
+    itrack += 1
+
+# final processing...
+
+if len(events_matrix1) > 0:
+
+    # recalculating timings
+
+    for e in events_matrix1:
+        e[1] = int(e[1] / 5)
+        e[2] = int(e[2] / 10)
+
+    events_matrix1.sort(key=lambda x: x[4], reverse=True) # Sort by pitch H -> L
+    events_matrix1.sort(key=lambda x: x[1]) # Then sort by start-times
+    
+    noc = 126 # Note or Chord
+
+    pe = events_matrix1[0]
+    melody_chords = []
+    for i in range(len(events_matrix1)-1):
+
+        time = max(0, min(125, events_matrix1[i][1]-pe[1])) # Time-shift
+        dur = max(0, min(125, events_matrix1[i][2])) # Duration
+        ptc = max(0, min(125, events_matrix1[i][4])) # Pitch
+
+        if events_matrix1[i][1] > pe[1] and events_matrix1[i+1][1] == events_matrix1[i][1]:
+          noc = 127 # Chord
+        if events_matrix1[i][1] > pe[1] and events_matrix1[i+1][1] != events_matrix1[i][1]:
+          noc = 126 # Single Note
+
+        melody_chords.append([noc, time, dur, ptc])
+
+        pe = events_matrix1[i]
+
+inputs = []
+
+for i in melody_chords:
+  
+      inputs.extend([i[0], i[1], i[2], i[3]]) # [noc, time, dur, ptc]
+
+print('Done!')
+
 #@title Generate music
 
 #@markdown NOTE: Play with the settings to get different results
 
-#@markdown NOTE: By default priming is random from the dataset
-
-priming_type = "Random Point"
+priming_type = "Random Dataset Point" #@param ["Random Dataset Point", "Custom MIDI"]
 freeze_priming_point = False #@param {type:"boolean"}
-number_of_prime_tokens = 64 #@param {type:"slider", min:4, max:128, step:4}
-number_of_tokens_to_generate = 64 #@param {type:"slider", min:64, max:128, step:16}
-number_of_continuation_blocks = 40 #@param {type:"slider", min:10, max:100, step:5}
+number_of_prime_tokens = 256 #@param {type:"slider", min:64, max:512, step:16}
+number_of_tokens_to_generate = 128 #@param {type:"slider", min:64, max:512, step:16}
+number_of_continuation_blocks = 32 #@param {type:"slider", min:1, max:100, step:1}
 temperature = 0.8 #@param {type:"slider", min:0.1, max:1, step:0.1}
 show_stats = False #@param {type:"boolean"}
 
@@ -549,7 +604,7 @@ print('=' * 70)
 
 print('Generation settings:')
 print('=' * 70)
-print('Priming type:', 'Random Point')
+print('Priming type:', priming_type)
 print('Number of prime tokens:', number_of_prime_tokens)
 print('Number of tokens:', number_of_tokens_to_generate)
 print('Number of continuation blocks:', number_of_continuation_blocks)
@@ -559,13 +614,19 @@ print('=' * 70)
 print('Prepping...')
 
 out = []
+out1 = []
 
 if not freeze_priming_point:
   r = random.randint(0, len(train_data1))
 
 out = train_data1[r:r+(number_of_prime_tokens*2)]
+out1.extend(out)
 
-out1 = []
+if priming_type == 'Custom MIDI':
+  out = []
+  out1 = []
+  out = inputs
+  out1.extend(out[:number_of_prime_tokens])
 
 tokens_range = 128
 
