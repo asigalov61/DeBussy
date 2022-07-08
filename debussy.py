@@ -106,6 +106,9 @@ gfiles = []
 
 melody_chords_f = []
 
+wk = [0, 2, 4, 5, 7, 9, 11] # White Notes
+bk = [1, 3, 6, 8, 10] # Black Notes
+
 ###########
 
 print('Loading MIDI files...')
@@ -166,20 +169,50 @@ for f in tqdm(filez[:int(len(filez) * dataset_ratio)]):
             events_matrix1.sort(key=lambda x: x[4], reverse=True) # Sort by pitch H -> L
             events_matrix1.sort(key=lambda x: x[1]) # Then sort by start-times
             
-            noc = 126 # Note or Chord
+            noc = 124 # Note or Chord (noc)
 
             pe = events_matrix1[0]
             melody_chords = []
+            cho = []
             for i in range(len(events_matrix1)-1):
 
-                time = max(0, min(125, events_matrix1[i][1]-pe[1])) # Time-shift
-                dur = max(0, min(125, events_matrix1[i][2])) # Duration
-                ptc = max(0, min(125, events_matrix1[i][4])) # Pitch
+                time = max(0, min(123, events_matrix1[i][1]-pe[1])) # Time-shift
+                dur = max(0, min(123, events_matrix1[i][2])) # Duration
+                ptc = max(0, min(123, events_matrix1[i][4])) # Pitch
 
-                if events_matrix1[i][1] > pe[1] and events_matrix1[i+1][1] == events_matrix1[i][1]:
-                  noc = 127 # Chord
                 if events_matrix1[i][1] > pe[1] and events_matrix1[i+1][1] != events_matrix1[i][1]:
-                  noc = 126 # Single Note
+                  # noc = 124-125 # Single Note
+                  # 124 - White Note
+                  # 125 - Black Note
+
+                  nr = [ptc % 12]
+
+                  if nr in wk:
+                    noc = 124     
+                  else:
+                    noc = 125
+
+                if events_matrix1[i][1] >= pe[1] and events_matrix1[i+1][1] == events_matrix1[i][1]:
+                  # noc = 126-127 # Chord
+                  # 126 - White Chord Note
+                  # 127 - Black Chord Note
+
+                  cr = [ptc % 12]
+                  if cr in wk:
+                    noc = 126
+                  else:
+                    noc = 127
+                
+                if events_matrix1[i][1] == pe[1] and events_matrix1[i+1][1] != events_matrix1[i][1]:
+                  # noc = 126-127 # Chord
+                  # 126 - White Chord Note
+                  # 127 - Black Chord Note
+
+                  cr = [ptc % 12]
+                  if cr in wk:
+                    noc = 126
+                  else:
+                    noc = 127
 
                 melody_chords.append([noc, time, dur, ptc])
 
@@ -227,8 +260,8 @@ pavg = sum(pitches) / len(pitches)
 print('Done!')
 print('=' * 70)
 
-print('Single notes count', nocs.count(126))
-print('Chords notes count', nocs.count(127))
+print('Single notes count', nocs.count(124)+nocs.count(125))
+print('Chords notes count', nocs.count(126)+nocs.count(127))
 print('Average time-shift', tavg)
 print('Average duration', davg)
 print('Average pitch', pavg)
