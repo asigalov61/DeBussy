@@ -1,9 +1,22 @@
 # DeBussy
 ## Solo Piano Music AI Implementation
 
+***
+
+## Original Version
+
 [![Open In Colab][colab-badge]][colab-notebook]
 
 [colab-notebook]: <https://colab.research.google.com/github/asigalov61/DeBussy/blob/main/DeBussy.ipynb>
+[colab-badge]: <https://colab.research.google.com/assets/colab-badge.svg>
+
+***
+
+### CLaMP Version
+
+[![Open In Colab][colab-badge]][colab-notebook2]
+
+[colab-notebook2]: <https://colab.research.google.com/github/asigalov61/DeBussy/blob/main/DeBussy_CLaMP.ipynb>
 [colab-badge]: <https://colab.research.google.com/assets/colab-badge.svg>
 
 ***
