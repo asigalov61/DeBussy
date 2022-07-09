@@ -583,6 +583,9 @@ events_matrix1 = []
 
 itrack = 1
 
+wk = [0, 2, 4, 5, 7, 9, 11] # White Notes
+bk = [1, 3, 6, 8, 10] # Black Notes
+
 while itrack < len(score):
     for event in score[itrack]:         
         if event[0] == 'note' and event[3] != 9:
@@ -700,8 +703,9 @@ out1 = []
 if not freeze_priming_point:
   r = random.randint(0, len(train_data1))
 
-out = train_data1[r:r+(number_of_prime_tokens*2)]
-out1.extend(out)
+if not priming_type == 'Custom MIDI':
+  out = train_data1[r:r+(number_of_prime_tokens*2)]
+  out1.extend(out)
 
 if priming_type == 'Custom MIDI':
   out = []
