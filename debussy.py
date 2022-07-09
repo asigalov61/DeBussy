@@ -853,13 +853,10 @@ out = []
 for m in melody_chords[:number_of_prime_notes]:
   out.extend(m)
 
+for i in tqdm(range(((len(melody_chords)-number_of_prime_notes) // inpaint_step))):
 
-
-
-for i in tqdm(range(((256-number_of_prime_notes) // inpaint_step))):
-
-  rand_seq = model.generate(torch.Tensor(out), 
-                            target_seq_length=len(out)+tsl,
+  rand_seq = model.generate(torch.Tensor(out[-1020:]), 
+                            target_seq_length=len(out[-1020:])+tsl,
                             temperature=temperature,
                             stop_token=tokens_range,
                             verbose=show_stats)
