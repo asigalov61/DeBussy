@@ -817,7 +817,7 @@ Audio(str(fname + '.wav'), rate=16000)
 #@markdown NOTE: Do not forget to load your custom MIDI to inpaint above
 
 inpainting_type = "Model Inpainting" #@param ["Model Inpainting", "Notes Inpainting", "Chords Inpainting"]
-number_of_prime_notes = 32 #@param {type:"slider", min:1, max:64, step:1}
+number_of_prime_notes = 64 #@param {type:"slider", min:16, max:128, step:4}
 temperature = 0.8 #@param {type:"slider", min:0.1, max:1, step:0.1}
 show_stats = False #@param {type:"boolean"}
 
@@ -872,6 +872,148 @@ for i in tqdm(range(((len(melody_chords)-number_of_prime_notes) // inpaint_step)
     out.extend(out1[-3:])
     out.extend(out0[(i*inpaint_step)+number_of_prime_notes]+[inp])
   
+print('=' * 70)
+print('Done!')
+
+if show_stats:
+  print('=' * 70)
+  print('Detokenizing output...')
+
+if len(out) != 0:
+    
+    song = out
+    song_f = []
+    time = 0
+    dur = 0
+    vel = 0
+    pitch = 0
+    channel = 0
+    son = [254]
+    for s in song[1:]:
+
+        if s < 254:
+          son.append(s)
+
+        else:
+          if len(son) == 3:
+
+            time += son[0]
+
+            dur = ((son[1]) * 2) + 2
+            
+            channel = 0 # Piano
+
+            if son[2] // 128 != 0:
+              pitch = son[2]-128
+            else:
+              pitch = son[2]
+            
+            # Velocities for notes and chords:
+            if s == 254:
+              vel = son[2] # Note velocity == note pitch value
+
+            else:
+              vel = son[2] + 20 # Chord velocity == chord pitch values + 20
+                               
+            song_f.append(['note', time, dur, channel, pitch, vel ])
+            
+          son = []
+
+    detailed_stats = TMIDIX.Tegridy_SONG_to_MIDI_Converter(song_f,
+                                                        output_signature = 'DeBussy',  
+                                                        output_file_name = '/content/DeBussy-Music-Composition', 
+                                                        track_name='Project Los Angeles',
+                                                        list_of_MIDI_patches=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                                        number_of_ticks_per_quarter=500)
+
+    print('Done!')
+
+else:
+  print('Models output is empty! Check the code...')
+  print('Shutting down...')
+
+
+print('=' * 70)
+
+print('Displaying resulting composition...')
+fname = '/content/DeBussy-Music-Composition'
+
+pm = pretty_midi.PrettyMIDI(fname + '.mid')
+
+# Retrieve piano roll of the MIDI file
+piano_roll = pm.get_piano_roll()
+
+plt.figure(figsize=(14, 5))
+librosa.display.specshow(piano_roll, x_axis='time', y_axis='cqt_note', fmin=1, hop_length=160, sr=16000, cmap=plt.cm.hot)
+plt.title(fname)
+
+FluidSynth("/usr/share/sounds/sf2/FluidR3_GM.sf2", 16000).midi_to_audio(str(fname + '.mid'), str(fname + '.wav'))
+Audio(str(fname + '.wav'), rate=16000)
+
+#@title Alternative Pitches Inpainting Generator
+
+#@markdown NOTE: Do not forget to load your custom MIDI to inpaint above
+
+inpainting_input = "Note-Chord" #@param ["Note-Chord", "Note-Chord-Time", "Note-Chord-Time-Duration"]
+number_of_prime_notes = 64 #@param {type:"slider", min:16, max:128, step:4}
+temperature = 0.8 #@param {type:"slider", min:0.1, max:1, step:0.1}
+show_stats = False #@param {type:"boolean"}
+
+inpaint_step = 2
+tokens_range = 256
+
+print('=' * 70)
+print('DeBussy Pitches Inpainting Generator')
+print('=' * 70)
+
+print('Generating...')
+
+tokens_range = 256
+
+if inpainting_input == 'Note-Chord':
+  tsl = 3
+
+if inpainting_input == 'Note-Chord-Time':
+  tsl = 2
+
+if inpainting_input == 'Note-Chord-Time-Duration':
+  tsl = 1
+
+out0 = melody_chords
+
+out = []
+
+for m in melody_chords[:number_of_prime_notes]:
+  out.extend(m)
+
+for i in tqdm(range((len(melody_chords)-number_of_prime_notes))):
+
+  if tsl == 3:
+    out.extend(out0[i+number_of_prime_notes][:1])
+
+  if tsl == 2:
+    out.extend(out0[i+number_of_prime_notes][:2])
+
+  if tsl == 1:
+    out.extend(out0[i+number_of_prime_notes][:3])
+
+  rand_seq = model.generate(torch.Tensor(out[-1020:]), 
+                            target_seq_length=len(out[-1020:])+tsl,
+                            temperature=temperature,
+                            stop_token=tokens_range,
+                            verbose=show_stats)
+    
+  out1 = rand_seq[0].cpu().numpy().tolist()
+
+  if tsl == 3:
+    out.extend(out1[-3:])
+
+  if tsl == 2:
+    out.extend(out1[-2:])
+  
+  if tsl == 1:
+    out.extend(out1[-1:])
+    
 print('=' * 70)
 print('Done!')
 
