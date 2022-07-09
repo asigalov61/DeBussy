@@ -383,7 +383,7 @@ if len(out) != 0:
     print('Done!')
 
 print('Displaying resulting composition...')
-fname = '/content/DeBussy-Music-Composition'
+fname = '/content/DeBussy-CLaMP-Music-Composition'
 
 pm = pretty_midi.PrettyMIDI(fname + '.mid')
 
@@ -447,7 +447,7 @@ print('=' * 50)
 
 #@title Train the model
 
-DIC_SIZE = 256
+DIC_SIZE = 386
 
 # DO NOT FORGET TO ADJUST MODEL PARAMS IN GPT2RGAX module to your specs
 
@@ -558,7 +558,7 @@ print('Done!')
 full_path_to_model_checkpoint = "/content/DeBussy-CLaMP-Trained-Model.pth" #@param {type:"string"}
 
 print('Loading the model...')
-config = GPTConfig(256, 
+config = GPTConfig(386, 
                    max_seq,
                    dim_feedforward=512,
                    n_layer=8, 
