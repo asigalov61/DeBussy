@@ -134,9 +134,9 @@ epochs = 5
 rpr = False #'store_true'
 
 enable_rpr = True
-max_seq = 1024
-n_layers = 6
-num_heads = 8
+max_seq = 512
+n_layers = 16
+num_heads = 16
 d_model = 512
 dim_feedforward = 512
 dropout_prob = 0.1
