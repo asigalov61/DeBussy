@@ -8,5 +8,15 @@
 
 ***
 
+## Some Model Stats:
+
+### FLoss 1.1589 CE
+
+### Acc 0.5297 CE
+
+### Trained @ 128 batches for ~26 hours on dual A6000 GPUs
+
+***
+
 ### Project Los Angeles
 ### Tegridy Code 2022
