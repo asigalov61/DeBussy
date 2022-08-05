@@ -3,6 +3,19 @@
 
 ***
 
+## Chordified Version [BEST/LATEST]
+
+[![Open In Colab][colab-badge]][colab-notebook3]
+
+[colab-notebook3]: <https://colab.research.google.com/github/asigalov61/DeBussy/blob/main/DeBussy_Chordified.ipynb>
+[colab-badge]: <https://colab.research.google.com/assets/colab-badge.svg>
+
+***
+
+## OLD IMPLEMENTATIONS
+
+***
+
 ## Original Version
 
 [![Open In Colab][colab-badge]][colab-notebook]
