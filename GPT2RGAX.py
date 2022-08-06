@@ -129,7 +129,7 @@ lr = None
 ce_smoothing = None
 batch_size = 4
 random_seq = True
-epochs = 5
+epochs = 500
 
 rpr = False #'store_true'
 
@@ -197,10 +197,7 @@ def train(cur_epoch, model, dataloader, loss, opt, lr_scheduler=None, num_iters=
             
             
             if save_steps % save_checkpoint_steps == 0:
-                print('Saving model progress. Please wait...')
-                print('gpt2_rpr_checkpoint_' + str(cur_epoch) + '_epoch_' + str(save_steps) + '_steps_' + str(round(float(out), 4)) + '_loss.pth')
-                torch.save(model.state_dict(), 'gpt2_rpr_checkpoint_' + str(cur_epoch) + '_epoch_' + str(save_steps) + '_steps_' + str(round(float(out), 4)) + '_loss.pth')
-                print('Done!')
+                
                 print('Saving training loss graph...')
                 tr_loss_list = [sublist for sublist in loss_hist]
                 plt.plot([i for i in range(len(tr_loss_list))] ,tr_loss_list, 'b')
