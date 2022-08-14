@@ -48,6 +48,7 @@ WARNING: This complete implementation is a functioning model of the Artificial I
 print('Loading needed modules. Please wait...')
 import os
 import random
+import secrets
 from collections import OrderedDict
 
 from tqdm import tqdm
@@ -302,14 +303,14 @@ if len(out) != 0:
 
 SEQ_LEN = max_seq
 
-BATCH_SIZE = 16 # Change this to your specs 116
+BATCH_SIZE = 16 # Change this to your specs
 
 # DO NOT FORGET TO ADJUST MODEL PARAMS IN GPT2RGAX module to your specs
 
 print('=' * 50)
 print('Loading training data...')
 
-data_train, data_val = torch.LongTensor(train_data1[:-(SEQ_LEN * BATCH_SIZE)]), torch.LongTensor(train_data1[-(SEQ_LEN * BATCH_SIZE * 8)-1:])
+data_train, data_val = torch.LongTensor(train_data1), torch.LongTensor(train_data1)
 
 class MusicSamplerDataset(Dataset):
     def __init__(self, data, seq_len):
@@ -318,28 +319,36 @@ class MusicSamplerDataset(Dataset):
         self.seq_len = seq_len
 
     def __getitem__(self, index):
-        rand = index * (self.seq_len // 8)
+
+        rand = secrets.randbelow((self.data.size(0)-(self.seq_len)) // (self.seq_len)) * (self.seq_len)
+
         x = self.data[rand: rand + self.seq_len].long()
         trg = self.data[(rand+1): (rand+1) + self.seq_len].long()
+        
         return x, trg
 
     def __len__(self):
-        return (self.data.size(0) - (self.seq_len * BATCH_SIZE)) // (self.seq_len // 8)
+        return self.data.size(0)
 
 train_dataset = MusicSamplerDataset(data_train, SEQ_LEN)
 val_dataset   = MusicSamplerDataset(data_val, SEQ_LEN)
 train_loader  = DataLoader(train_dataset, batch_size = BATCH_SIZE)
 val_loader    = DataLoader(val_dataset, batch_size = BATCH_SIZE)
 
+print('=' * 50)
 print('Total INTs in the dataset', len(train_data1))
 print('Total unique INTs in the dataset', len(set(train_data1)))
 print('Max INT in the dataset', max(train_data1))
 print('Min INT in the dataset', min(train_data1))
 print('=' * 50)
-
 print('Length of the dataset:',len(train_dataset))
-print('Number of dataset samples:', (len(train_dataset)))
-print('Length of data loader',len(train_loader))
+print('Number of batched samples per epoch:', len(train_data1) // max_seq // BATCH_SIZE)
+print('=' * 50)
+print('Sample train dataset:', train_dataset[0])
+print('Sample val dataset:', val_dataset[0])
+print('=' * 50)
+print('Train loader length:', len(train_loader))
+print('Val loader length:', len(val_loader))
 print('=' * 50)
 print('Done! Enjoy! :)')
 print('=' * 50)
